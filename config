@@ -1,0 +1,5 @@
+[Main]
+User="admin@spb.swisstok.ru";
+Password="12345";
+Host="192.168.1.1";
+OCIPPort="2208";
