@@ -76,7 +76,7 @@ func ParseOCIP (data []byte) OCIP {
     return ocip
 }
 
-func OCIPsend(Config ConfigT,USERID string,COMMAND string,args ...string){
+func OCIPsend(Config ConfigT,COMMAND string,args ...string){
     var SESSION string = randSeq(10)
     var HEAD string = ConcatStr("","<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><BroadsoftDocument protocol = \"OCI\" xmlns=\"C\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><sessionId xmlns=\"\">",SESSION,"</sessionId>")
     var dialer net.Dialer
