@@ -104,7 +104,7 @@ func OCIPsend(Config ConfigT,COMMAND string,args ...string){
             ARGS = ConcatStr("",ARGS,"<",separated[i],">",separated[i+1],"</",separated[i],">")
         }
     }
-    REQ := ConcatStr("","<command xsi:type=\"",COMMAND,"\" xmlns=\"\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><userId>",USERID,"</userId>",ARGS,"</command></BroadsoftDocument>")
+    REQ := ConcatStr("","<command xsi:type=\"",COMMAND,"\" xmlns=\"\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">",ARGS,"</command></BroadsoftDocument>")
     fmt.Fprintf(chandesc,"%s%s",HEAD,REQ)
     status,err = chanreader.ReadString('\n')
     status,err = chanreader.ReadString('\n')
