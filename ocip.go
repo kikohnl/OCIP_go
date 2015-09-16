@@ -62,10 +62,6 @@ func LogErr (err error,args ... string) {
     fmt.Fprint(os.Stderr,time.Now(),args,err,"\n")
 }
 
-func LogOut (log string) {
-    fmt.Fprint(os.Stdout,log)
-}
-
 type OCIP struct {
     Nonce string `xml:"command>nonce"`
 }
@@ -76,7 +72,7 @@ func ParseOCIP (data []byte) OCIP {
     return ocip
 }
 
-func OCIPsend(Config ConfigT,COMMAND string,args ...string){
+func OCIPsend(Config ConfigT,COMMAND string,args ...string) string{
     var SESSION string = randSeq(10)
     var HEAD string = ConcatStr("","<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><BroadsoftDocument protocol = \"OCI\" xmlns=\"C\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><sessionId xmlns=\"\">",SESSION,"</sessionId>")
     var dialer net.Dialer
@@ -108,8 +104,8 @@ func OCIPsend(Config ConfigT,COMMAND string,args ...string){
     fmt.Fprintf(chandesc,"%s%s",HEAD,REQ)
     status,err = chanreader.ReadString('\n')
     status,err = chanreader.ReadString('\n')
-    LogOut(status)
     LOGOUT := ConcatStr("","<command xsi:type=\"LogoutRequest\" xmlns=\"\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><userId>",Config.Main.User,"</userId></command></BroadsoftDocument>")
     fmt.Fprintf(chandesc,"%s%s",HEAD,LOGOUT)
     chandesc.Close()
+    return status
 }
