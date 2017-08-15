@@ -80,6 +80,7 @@ func OCIPsend(Config ConfigT, COMMAND string, args ...string) string {
 	chandesc, err := dialer.Dial("tcp", ConcatStr(":", Config.Main.Host, Config.Main.OCIPPort))
 	if err != nil {
 		LogErr(err, "OCIP connection")
+		os.Exit(1)
 	}
 	chandesc.SetReadDeadline(time.Now().Add(time.Second))
 	AUTH := ConcatStr("", "<command xsi:type=\"AuthenticationRequest\" xmlns=\"\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><userId>", Config.Main.User, "</userId></command></BroadsoftDocument>")
