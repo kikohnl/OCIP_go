@@ -7,12 +7,13 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
-	"gopkg.in/gcfg.v1"
 	"math/rand"
 	"net"
 	"os"
 	"strings"
 	"time"
+
+	"gopkg.in/gcfg.v1"
 )
 
 type ConfigT struct {
@@ -66,12 +67,14 @@ type OCIP struct {
 	Nonce string `xml:"command>nonce"`
 }
 
+// ParseOCIP -- return an umarshaled xml
 func ParseOCIP(data []byte) OCIP {
 	var ocip OCIP
 	xml.Unmarshal(data, &ocip)
 	return ocip
 }
 
+// OCIPsend  -- Send a single level command to Browworks
 func OCIPsend(Config ConfigT, COMMAND string, args ...string) string {
 	var SESSION string = randSeq(10)
 	var HEAD string = ConcatStr("", "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><BroadsoftDocument protocol = \"OCI\" xmlns=\"C\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><sessionId xmlns=\"\">", SESSION, "</sessionId>")
@@ -109,4 +112,41 @@ func OCIPsend(Config ConfigT, COMMAND string, args ...string) string {
 	fmt.Fprintf(chandesc, "%s%s", HEAD, LOGOUT)
 	chandesc.Close()
 	return status
+}
+
+// SendXML --  send a preformated, marshaled XML structure to Broadworks
+//  This allows multilevle commands like UserModifyRequest21 to be executed.
+
+func SendXML(Config ConfigT, COMMAND string, xml string) string {
+	var SESSION = randSeq(10)
+	var HEAD = ConcatStr("", "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><BroadsoftDocument protocol = \"OCI\" xmlns=\"C\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><sessionId xmlns=\"\">", SESSION, "</sessionId>")
+	var dialer net.Dialer
+	dialer.Timeout = time.Second
+	chandesc, err := dialer.Dial("tcp", ConcatStr(":", Config.Main.Host, Config.Main.OCIPPort))
+	if err != nil {
+		LogErr(err, "OCIP connection")
+		os.Exit(1)
+	}
+	chandesc.SetReadDeadline(time.Now().Add(time.Second))
+	AUTH := ConcatStr("", "<command xsi:type=\"AuthenticationRequest\" xmlns=\"\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><userId>", Config.Main.User, "</userId></command></BroadsoftDocument>")
+	fmt.Fprintf(chandesc, "%s%s", HEAD, AUTH)
+	chanreader := bufio.NewReader(chandesc)
+	status, err := chanreader.ReadString('\n')
+	status, err = chanreader.ReadString('\n')
+	ocip := ParseOCIP([]byte(status))
+	responce := MakeDigest(Config.Main.Password, ocip.Nonce)
+	LOGIN := ConcatStr("", "<command xsi:type=\"LoginRequest14sp4\" xmlns=\"\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><userId>", Config.Main.User, "</userId><signedPassword>", responce, "</signedPassword></command></BroadsoftDocument>")
+	fmt.Fprintf(chandesc, "%s%s", HEAD, LOGIN)
+	status, err = chanreader.ReadString('\n')
+	status, err = chanreader.ReadString('\n')
+
+	REQ := ConcatStr("", "<command xsi:type=\"", COMMAND, "\" xmlns=\"\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">", xml, "</command></BroadsoftDocument>")
+	fmt.Fprintf(chandesc, "%s%s", HEAD, REQ)
+	status, err = chanreader.ReadString('\n')
+	status, err = chanreader.ReadString('\n')
+	LOGOUT := ConcatStr("", "<command xsi:type=\"LogoutRequest\" xmlns=\"\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><userId>", Config.Main.User, "</userId></command></BroadsoftDocument>")
+	fmt.Fprintf(chandesc, "%s%s", HEAD, LOGOUT)
+	chandesc.Close()
+	return status
+
 }
